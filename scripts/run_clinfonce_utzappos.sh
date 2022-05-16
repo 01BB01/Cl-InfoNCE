@@ -1,0 +1,102 @@
+#!/bin/sh
+
+
+###################################
+#     define variables     #
+###################################
+# train stuff
+epoch=1000;
+save_freq=100;
+learning_rate=0.17;
+batch_size=128;
+
+
+# data stuff
+dataset="ut-zap50k-sub";
+gran_lvl=$1;
+instruction="rank_H";
+meta_file_train="meta_data_train.csv";
+img_size=32;
+
+# optimization
+temp=0.07;
+method="SupCon";
+lr_scheduling="warmup";
+# resume
+if (! test -z "$3")
+then
+resume_model_path="$3/ckpt_epoch_$4.pth";
+else
+resume_model_path="";
+fi
+# linear eval
+model_testing="ckpt_epoch_$epoch.pth";
+# trail
+trial=0;
+# costomized name
+customized_name=""
+
+# data folder
+data_folder="../data_processing/UT-zappos50K"
+data_root_name="ut-zap50k-images-square"
+save_path="../train_related"
+
+###################################
+#         define command          #
+###################################
+
+# run supcon
+run_command="CUDA_VISIBLE_DEVICES=$2 python ../clinfonce/main_clinfonce.py --dataset $dataset \
+--method $method \
+--gran_lvl $gran_lvl \
+--instruction $instruction \
+--meta_file_train $meta_file_train \
+--img_size $img_size \
+--learning_rate $learning_rate \
+--lr_scheduling $lr_scheduling \
+--epochs $epoch \
+--batch_size $batch_size \
+--temp $temp \
+--trial $trial \
+--num_workers 8 \
+--overwrite \
+--save_freq $save_freq \
+--model resnet50 \
+--data_folder $data_folder \
+--data_root_name $data_root_name \
+--save_path $save_path \
+"
+
+# add resume if specified
+if (! test -z "$resume_model_path");
+then
+resume_command="\
+--resume_model_path $resume_model_path
+"
+run_command="$run_command$resume_command"
+fi
+
+if (! test -z "$customized_name");
+then
+customized_name_command="\
+--customized_name $customized_name
+"
+run_command="$run_command$customized_name_command"
+fi
+
+
+
+###################################
+#               RUN               #
+###################################
+# display command
+echo "======================";
+echo $run_command;
+echo "======================";
+
+eval $run_command;
+
+
+
+
+
